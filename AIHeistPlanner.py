@@ -1,6 +1,7 @@
 
 from collections import deque
 
+
 # TODO: Implement A*
 class Heist_A_star:
     def __init__(self, start):
@@ -58,11 +59,8 @@ class Heist_BFS:
             new_row = row + dr
             new_column = column + dc
 
-            if (0 <= new_row < len(self.grid)
-                    and 0 <= new_column < len(self.grid[0])):
-
+            if (0 <= new_row < len(self.grid)and 0 <= new_column < len(self.grid[0])):
                 if self.grid[new_row][new_column] not in ["C", "X", "G"]:
-
                     # Check whether treasure has been collected
                     collected = has_treasure or (new_row, new_column) == self.treasure
 
@@ -72,7 +70,6 @@ class Heist_BFS:
 
     def is_goal(self, node):
         row, column, has_treasure = node
-
         return (row, column) == self.exit and has_treasure
 
 
