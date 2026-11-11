@@ -275,10 +275,10 @@ class HeistPlanner:
         execution_time_a_star = time.perf_counter() - start_time
         print("\nA* Results: ")
         if a_star_path:
-            print("Path:", [(row, column) for row, column, _ in a_star_path])
-            print("Path length:", len(a_star_path) - 1)
+            print("Path: ", [(row, column) for row, column, _ in a_star_path])
+            print("Path length: ", len(a_star_path) - 1)
             print("Nodes ecplored: ", a_star_explored)
-            print("Execution time:" ,execution_time_a_star, "seconds")
+            print(f"Execution time: {execution_time_a_star:.6f} seconds")
         else:
             print("Error")
         
@@ -288,18 +288,18 @@ class HeistPlanner:
         print("\nBFS Results:")
         
         if bfs_path:
-            print("Path:", [(row, column) for row, column, _ in bfs_path])
-            print("Path length:", len(bfs_path) - 1)
-            print("Nodes explored:", explored)
-            print("Execution time:" ,execution_time, "seconds")
+            print("Path: ", [(row, column) for row, column, _ in bfs_path])
+            print("Path length: ", len(bfs_path) - 1)
+            print("Nodes explored: ", explored)
+            print(f"Execution time: {execution_time:.6f} seconds")
             
             # Show the path on the grid
             self.show_path(bfs_path)
         else:
             print("No path found.")
-            print("Nodes explored:", explored)
+            print("Nodes explored: ", explored)
 
-            print("Execution time: {execution_time:.6f} seconds")
+            print(f"Execution time: {execution_time:.6f} seconds")
             
         return bfs_path
     
