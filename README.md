@@ -16,7 +16,7 @@ The project uses two search algorithms: A* Search and Breadth-First Search (BFS)
 - Python: Main programming language
 - Collection (deque): Used to implement the BFS queue
 - Heapq: Used to manage the A* priority queue
-- It tools (itertools):
+- It tools (itertools): Used for tie-breaking in the A* priority queue
 - Time - used to measure algorithm execution time
 
 ## Museum Grid
@@ -48,3 +48,7 @@ The two search algorithms will be compared using the following measurements:
 - Success rate: Percentage of museum layouts where an algorithm finds a valid path.
 
 Both search algorithms will be tested using the same museum layouts to keep the consistency and fairness when comparing the two.
+
+## Project Status
+### Work in Progress
+This project is still being developed. Additional features, testing, and performance evaluations will be completed before December 3rd, 2026 for presentation day. Final polishing based on feedback from the presentation as well as the report will be submitted on or before December 10th, 2026.
