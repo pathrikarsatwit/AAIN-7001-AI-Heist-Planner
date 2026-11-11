@@ -1,5 +1,8 @@
-from collections import deque
+import heapq
+import itertools
 import time
+from collections import deque
+
 
 # Shared search logic for both BFS and A* search
 class HeistSearch:
@@ -55,8 +58,79 @@ class HeistSearch:
 
 # TODO: Implement A*
 class Heist_A_star(HeistSearch):
-    def __init__(self, start):
-        self.start = start
+
+    def manhattan_distance(self, state):
+        row, column, has_treasure = state
+
+        if has_treasure:
+            return (
+                abs(row - self.exit[0]) +
+                abs(column - self.exit[1])
+            )
+
+        distance_to_treasure = (
+            abs(row - self.treasure[0]) +
+            abs(column - self.treasure[1])
+        )
+
+        distance_to_exit = (
+            abs(self.treasure[0] - self.exit[0]) +
+            abs(self.treasure[1] - self.exit[1])
+        )
+
+        return distance_to_treasure + distance_to_exit
+
+    def A_star(self):
+
+        tie = itertools.count()
+
+        start_state = (
+            self.start[0],
+            self.start[1],
+            self.start == self.treasure
+        )
+
+        # Store: (f_cost, g_cost, tie_breaker, state)
+        frontier = [
+            (self.manhattan_distance(start_state),
+             0, next(tie), start_state)
+        ]
+
+        best_g = {start_state: 0}
+        parent = {start_state: None}
+
+        explored = 0
+
+        while frontier:
+
+            _, g, _, node = heapq.heappop(frontier)
+
+            if g > best_g.get(node, float("inf")):
+                continue
+
+            explored += 1
+
+            if self.is_goal(node):
+                path = self.reconstruct_path(parent, node)
+                return path, explored
+
+            for child in self.expand(node):
+
+                child_g = g + 1
+
+                if child_g < best_g.get(child, float("inf")):
+
+                    best_g[child] = child_g
+                    parent[child] = node
+
+                    child_f = child_g + self.manhattan_distance(child)
+
+                    heapq.heappush(
+                        frontier,
+                        (child_f, child_g, next(tie), child)
+                    )
+
+        return None, explored
 
 
 # TODO: Implement BFS
@@ -97,13 +171,16 @@ class HeistPlanner:
         # Agent, treasure, and exit positions
         self.ai_agent_position = (0, 0)
         self.treasure_position = (7, 7)
-        self.exit_position = (6, 0)
+        self.exit_position = (0, 7)
         
         # Obstacles
         self.obstacles = [
             (1, 2), (1, 3),
             (2, 2), (3, 2),
-            (5, 3), (5, 4)
+            (5, 3), (5, 4),
+            (2, 5), (3, 5),
+            (4, 5), (5, 5),
+            (6, 2), (6, 3)
         ]
         
         # Security camera positions
@@ -132,14 +209,14 @@ class HeistPlanner:
             for dc in [-1, 1]:
                 new_column = column + dc
                 
-                if 0 <= new_column < self.columns:
+                if 0 <= new_column < self.columns:  # noqa: SIM102
                     if grid[row][new_column] == ".":
                         grid[row][new_column] = "X"
                         
         for row, column in self.guard_positions:
             grid[row][column] = "G"
             
-            # Add treasure, exit, and AI agen to the grid
+           
             tr, tc = self.treasure_position
             grid[tr][tc] = "T"
             
@@ -187,27 +264,41 @@ class HeistPlanner:
             exit = self.exit_position, 
             grid = grid
         )
-
+        
+        a_star = Heist_A_star(start= self.ai_agent_position, treasure = self.treasure_position, exit = self.exit_position, grid = grid)
         # Measure execution time for BFS
         start_time = time.perf_counter()
     
         bfs_path, explored = bfs.BFS()
+
+        a_star_path, a_star_explored = a_star.A_star()
+        execution_time_a_star = time.perf_counter() - start_time
+        print("\nA* Results: ")
+        if a_star_path:
+            print("Path:", [(row, column) for row, column, _ in a_star_path])
+            print("Path length:", len(a_star_path) - 1)
+            print("Nodes ecplored: ", a_star_explored)
+            print("Execution time:" ,execution_time_a_star, "seconds")
+        else:
+            print("Error")
+        
     
         execution_time = time.perf_counter() - start_time
         
         print("\nBFS Results:")
         
         if bfs_path:
-            print("Path:", bfs_path)
+            print("Path:", [(row, column) for row, column, _ in bfs_path])
             print("Path length:", len(bfs_path) - 1)
             print("Nodes explored:", explored)
-            print("Execution time: {execution_time:.6f} seconds")
+            print("Execution time:" ,execution_time, "seconds")
             
             # Show the path on the grid
             self.show_path(bfs_path)
         else:
             print("No path found.")
             print("Nodes explored:", explored)
+
             print("Execution time: {execution_time:.6f} seconds")
             
         return bfs_path
