@@ -35,7 +35,7 @@ The museum is represented as a 2D grid. Each cell represents a location that the
 
 ## Search Algorithms
 ### A* Search
-A* uses a priority queue to determine which state to explore next. 
+A* explores the museum grid by prioritizing the states that appear closest to the goal. It uses a priority queue to keep track of which states to explore next, considering both the cost of the path taken so far and the estimated distance remaining to the goal. By using the manhattan distance heuristic, A* can guide the search toward the treasure and then the exit more efficiently. Because every move has the same cost and the heuristic is admissible, A* can find an optimal path when a valid path exists.
 
 ### Breadth-First Search (BFS)
 BFS explores the museum grid level by level, checking neighboring locations before moving farther away. It uses a queue to keep track of the states that need to be explored. Because every move has the same cost, BFS can find a shortest path to the goal when a valid path exists.
