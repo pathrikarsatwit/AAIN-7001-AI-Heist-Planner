@@ -209,7 +209,7 @@ class HeistPlanner:
             for dc in [-1, 1]:
                 new_column = column + dc
                 
-                if 0 <= new_column < self.columns:  # noqa: SIM102
+                if 0 <= new_column < self.columns:
                     if grid[row][new_column] == ".":
                         grid[row][new_column] = "X"
                         
@@ -236,7 +236,7 @@ class HeistPlanner:
         for r, row in enumerate(grid):
             print(r, " ".join(str(cell) for cell in row))
            
-    # Display the BFS path on the grid 
+    # Display BFS path on the grid 
     def show_path(self, path):
         grid = self.create_game_board()
         
