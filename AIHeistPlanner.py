@@ -56,7 +56,7 @@ class HeistSearch:
             
         return path[::-1]
 
-# TODO: Implement A*
+# A* Search Algorithm Implementation
 class Heist_A_star(HeistSearch):
 
     def manhattan_distance(self, state):
@@ -133,7 +133,7 @@ class Heist_A_star(HeistSearch):
         return None, explored
 
 
-# TODO: Implement BFS
+# BFS Search Algorithm Implementation
 class Heist_BFS(HeistSearch):
     def BFS(self):
         # State = (row, column, has_treasure)
@@ -162,7 +162,7 @@ class Heist_BFS(HeistSearch):
         return None, explored
 
 
-
+# Manages the heist planning including the grid, game elements, and running the search algorithms
 class HeistPlanner:
     def __init__(self, columns, rows):
         self.columns = columns
@@ -217,16 +217,16 @@ class HeistPlanner:
             grid[row][column] = "G"
             
            
-            tr, tc = self.treasure_position
-            grid[tr][tc] = "T"
+        tr, tc = self.treasure_position
+        grid[tr][tc] = "T"
             
-            er, ec = self.exit_position
-            grid[er][ec] = "E"
+        er, ec = self.exit_position
+        grid[er][ec] = "E"
             
-            ar, ac = self.ai_agent_position
-            grid[ar][ac] = "A"
+        ar, ac = self.ai_agent_position
+        grid[ar][ac] = "A"
             
-            return grid
+        return grid
             
 
     # Print the grid
@@ -251,7 +251,7 @@ class HeistPlanner:
         print("\nMuseum with BFS Path (*):")
         self.heist_grid(grid)
 
-    # Run BFS and display the results
+    # Run A* and BFS and display the results
     def run_solutions(self):
         grid = self.create_game_board()
 
@@ -265,41 +265,49 @@ class HeistPlanner:
             grid = grid
         )
         
-        a_star = Heist_A_star(start= self.ai_agent_position, treasure = self.treasure_position, exit = self.exit_position, grid = grid)
-        # Measure execution time for BFS
-        start_time = time.perf_counter()
-    
-        bfs_path, explored = bfs.BFS()
+        a_star = Heist_A_star(
+            start= self.ai_agent_position, 
+            treasure = self.treasure_position, 
+            exit = self.exit_position, 
+            grid = grid
+        )
 
+        # Measure execution time for A*
+        start_time = time.perf_counter()
         a_star_path, a_star_explored = a_star.A_star()
         execution_time_a_star = time.perf_counter() - start_time
+        
+        # Measure execution time for BFS
+        start_time = time.perf_counter()
+        bfs_path, bfs_explored = bfs.BFS()
+        execution_time_bfs = time.perf_counter() - start_time
+        
+        # Display the results for A*
         print("\nA* Results: ")
         if a_star_path:
             print("Path: ", [(row, column) for row, column, _ in a_star_path])
             print("Path length: ", len(a_star_path) - 1)
-            print("Nodes ecplored: ", a_star_explored)
+            print("Nodes explored: ", a_star_explored)
             print(f"Execution time: {execution_time_a_star:.6f} seconds")
         else:
-            print("Error")
+            print("No path found.")
+            print("Nodes explored: ", a_star_explored)
+            print(f"Execution time: {execution_time_a_star:.6f} seconds")
         
-    
-        execution_time = time.perf_counter() - start_time
-        
+        # Display the results for BFS 
         print("\nBFS Results:")
-        
         if bfs_path:
             print("Path: ", [(row, column) for row, column, _ in bfs_path])
             print("Path length: ", len(bfs_path) - 1)
-            print("Nodes explored: ", explored)
-            print(f"Execution time: {execution_time:.6f} seconds")
+            print("Nodes explored: ", bfs_explored)
+            print(f"Execution time: {execution_time_bfs:.6f} seconds")
             
-            # Show the path on the grid
+            # Show the BFS path on the grid
             self.show_path(bfs_path)
         else:
             print("No path found.")
-            print("Nodes explored: ", explored)
-
-            print(f"Execution time: {execution_time:.6f} seconds")
+            print("Nodes explored: ", bfs_explored)
+            print(f"Execution time: {execution_time_bfs:.6f} seconds")
             
         return bfs_path
     
