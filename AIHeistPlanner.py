@@ -1,8 +1,105 @@
 import heapq
 import itertools
+import random
 import time
 from collections import deque
 
+
+class grid_layout:
+
+    @classmethod
+    def generate_layouts(cls, seed=None):
+        rng = random.Random(seed)
+        layouts = []
+
+        for size in (10, 15, 20):
+            for layout_number in range(1, 21):
+                layout = cls()
+                layout.rows = layout.columns = size
+                layout.layout_id = f"{size}x{size}-{layout_number:02d}"
+                layout.generate_game_elements(rng)
+                layouts.append(layout)
+
+        return layouts
+
+    def create_game_board(self):
+
+        # Create an empty board
+        self.grid = [
+            ["." for _ in range(self.columns)]
+            for _ in range(self.rows)
+        ]
+
+        # Add obstacles
+        for row, column in self.obstacles:
+            self.grid[row][column] = "#"
+
+        # Add cameras and their detection zones
+        for row, column in self.camera_positions:
+            self.grid[row][column] = "C"
+
+            for dc in [-1, 1]:
+                new_column = column + dc
+
+                if (0 <= new_column < self.columns
+                        and self.grid[row][new_column] == "."):
+                    self.grid[row][new_column] = "X"
+
+        # Add guards
+        for row, column in self.guard_positions:
+            self.grid[row][column] = "G"
+
+        # Add treasure
+        tr, tc = self.treasure_position
+        self.grid[tr][tc] = "T"
+
+        # Add exit
+        er, ec = self.exit_position
+        self.grid[er][ec] = "E"
+
+        # Add AI agent
+        ar, ac = self.ai_agent_position
+        self.grid[ar][ac] = "A"
+
+        return self.grid
+
+    def generate_game_elements(self, rng):
+        size = self.rows
+        area = self.rows * self.columns
+        obstacle_min = max(6, area // 24)
+        obstacle_max = max(obstacle_min, area // 12)
+        obstacle_count = rng.randint(obstacle_min, obstacle_max)
+        camera_count = rng.randint(1, max(2, size // 5))
+        guard_count = rng.randint(1, max(2, size // 5))
+
+        # Keep the top row and rightmost column clear for a valid route.
+        available_positions = [
+            (row, column)
+            for row in range(1, self.rows)
+            for column in range(self.columns - 1)
+        ]
+        positions = rng.sample(
+            available_positions,
+            obstacle_count + camera_count + guard_count
+        )
+
+        self.obstacles = positions[:obstacle_count]
+        self.camera_positions = positions[
+            obstacle_count:obstacle_count + camera_count
+        ]
+        self.guard_positions = positions[obstacle_count + camera_count:]
+
+        self.ai_agent_position = (0, 0)
+        self.exit_position = (0, self.columns - 1)
+        self.treasure_position = (self.rows - 1, self.columns - 1)
+
+    # Print the grid
+    def heist_grid(self, grid):
+    # Print column headers
+        print("    " + "".join(f"{c:3}" for c in range(self.columns)))
+    # Print grid rows
+        for r, row in enumerate(grid):
+            print(f"{r:3} " + "".join(f"{cell:3}" for cell in row))
 
 # Shared search logic for both BFS and A* search
 class HeistSearch:
@@ -164,155 +261,139 @@ class Heist_BFS(HeistSearch):
 
 # Manages the heist planning including the grid, game elements, and running the search algorithms
 class HeistPlanner:
-    def __init__(self, columns, rows):
-        self.columns = columns
-        self.rows = rows
 
-        # Agent, treasure, and exit positions
-        self.ai_agent_position = (0, 0)
-        self.treasure_position = (7, 7)
-        self.exit_position = (0, 7)
-        
-        # Obstacles
-        self.obstacles = [
-            (1, 2), (1, 3),
-            (2, 2), (3, 2),
-            (5, 3), (5, 4),
-            (2, 5), (3, 5),
-            (4, 5), (5, 5),
-            (6, 2), (6, 3)
-        ]
-        
-        # Security camera positions
-        self.camera_positions = [
-            (4, 3), (5, 6)
-        ]
-        
-        # Security guard positions
-        self.guard_positions = [
-            (7, 6), (2, 4)
-        ]
-       
-    # Create the game board/grid 
-    def create_game_board(self):
-        grid = [
-            ["." for _ in range(self.columns)] for _ in range(self.rows)
-        ]
-        
-        # Add obstacles, cameras, and guards to the grid
-        for row, column in self.obstacles:
-            grid[row][column] = "#"
-        
-        for row, column in self.camera_positions:
-            grid[row][column] = "C"
-            
-            for dc in [-1, 1]:
-                new_column = column + dc
-                
-                if 0 <= new_column < self.columns:
-                    if grid[row][new_column] == ".":
-                        grid[row][new_column] = "X"
-                        
-        for row, column in self.guard_positions:
-            grid[row][column] = "G"
-            
-           
-        tr, tc = self.treasure_position
-        grid[tr][tc] = "T"
-            
-        er, ec = self.exit_position
-        grid[er][ec] = "E"
-            
-        ar, ac = self.ai_agent_position
-        grid[ar][ac] = "A"
-            
-        return grid
-            
+    def __init__(self, grid_layout):
 
-    # Print the grid
-    def heist_grid(self, grid):
-        print(" " + " ".join(str(c) for c in range(self.columns)))
-        
-        for r, row in enumerate(grid):
-            print(r, " ".join(str(cell) for cell in row))
-           
-    # Display BFS path on the grid 
-    def show_path(self, path):
-        grid = self.create_game_board()
-        
+        self.grid_layout = grid_layout
+
+        # Store positions in HeistPlanner
+        self.ai_agent_position = self.grid_layout.ai_agent_position
+        self.treasure_position = self.grid_layout.treasure_position
+        self.exit_position = self.grid_layout.exit_position
+
+    # Display BFS path on the grid
+    def show_path(self, path, original_grid):
+
+        # Make a copy of the original board
+        grid = [row[:] for row in original_grid]
+
         if path:
+
             for row, column, has_treasure in path[1:-1]:
+
                 if (row, column) not in [
                     self.treasure_position,
                     self.exit_position
                 ]:
+
                     grid[row][column] = "*"
-                    
+
         print("\nMuseum with BFS Path (*):")
-        self.heist_grid(grid)
 
-    # Run A* and BFS and display the results
+        self.grid_layout.heist_grid(grid)
+
+    # Run A* and BFS
     def run_solutions(self):
-        grid = self.create_game_board()
 
+        grid = self.grid_layout.create_game_board()
+
+        print(
+            f"\nSelected layout: {self.grid_layout.layout_id} "
+            f"({self.grid_layout.rows}x{self.grid_layout.columns})"
+        )
         print("\nOriginal Heist Grid:")
-        self.heist_grid(grid)
+
+        self.grid_layout.heist_grid(grid)
 
         bfs = Heist_BFS(
-            start = self.ai_agent_position, 
-            treasure = self.treasure_position, 
-            exit = self.exit_position, 
-            grid = grid
-        )
-        
-        a_star = Heist_A_star(
-            start= self.ai_agent_position, 
-            treasure = self.treasure_position, 
-            exit = self.exit_position, 
-            grid = grid
+            start=self.ai_agent_position,
+            treasure=self.treasure_position,
+            exit=self.exit_position,
+            grid=grid
         )
 
-        # Measure execution time for A*
+        a_star = Heist_A_star(
+            start=self.ai_agent_position,
+            treasure=self.treasure_position,
+            exit=self.exit_position,
+            grid=grid
+        )
+
+        # Measure A* execution time
         start_time = time.perf_counter()
+
         a_star_path, a_star_explored = a_star.A_star()
+
         execution_time_a_star = time.perf_counter() - start_time
-        
-        # Measure execution time for BFS
+
+        # Measure BFS execution time
         start_time = time.perf_counter()
+
         bfs_path, bfs_explored = bfs.BFS()
+
         execution_time_bfs = time.perf_counter() - start_time
-        
-        # Display the results for A*
-        print("\nA* Results: ")
+
+        # Display A* results
+        print("\nA* Results:")
+
         if a_star_path:
-            print("Path: ", [(row, column) for row, column, _ in a_star_path])
-            print("Path length: ", len(a_star_path) - 1)
-            print("Nodes explored: ", a_star_explored)
-            print(f"Execution time: {execution_time_a_star:.6f} seconds")
+
+            print(
+                "Path:",
+                [(row, column) for row, column, _ in a_star_path]
+            )
+
+            print("Path length:", len(a_star_path) - 1)
+            print("Nodes explored:", a_star_explored)
+
+            print(
+                f"Execution time: {execution_time_a_star:.6f} seconds"
+            )
+
         else:
+
             print("No path found.")
-            print("Nodes explored: ", a_star_explored)
-            print(f"Execution time: {execution_time_a_star:.6f} seconds")
-        
-        # Display the results for BFS 
+            print("Nodes explored:", a_star_explored)
+
+            print(
+                f"Execution time: {execution_time_a_star:.6f} seconds"
+            )
+
+        # Display BFS results
         print("\nBFS Results:")
+
         if bfs_path:
-            print("Path: ", [(row, column) for row, column, _ in bfs_path])
-            print("Path length: ", len(bfs_path) - 1)
-            print("Nodes explored: ", bfs_explored)
-            print(f"Execution time: {execution_time_bfs:.6f} seconds")
-            
-            # Show the BFS path on the grid
-            self.show_path(bfs_path)
+
+            print(
+                "Path:",
+                [(row, column) for row, column, _ in bfs_path]
+            )
+
+            print("Path length:", len(bfs_path) - 1)
+            print("Nodes explored:", bfs_explored)
+
+            print(
+                f"Execution time: {execution_time_bfs:.6f} seconds"
+            )
+
+            # Display BFS path
+            self.show_path(bfs_path, grid)
+
         else:
+
             print("No path found.")
-            print("Nodes explored: ", bfs_explored)
-            print(f"Execution time: {execution_time_bfs:.6f} seconds")
-            
+            print("Nodes explored:", bfs_explored)
+
+            print(
+                f"Execution time: {execution_time_bfs:.6f} seconds"
+            )
+
         return bfs_path
     
 
 # Run the program
 if __name__ == "__main__":
-    heist = HeistPlanner(8, 8)
+    layouts = grid_layout.generate_layouts()
+    selected_layout = random.choice(layouts)
+    heist = HeistPlanner(selected_layout)
     heist.run_solutions()
