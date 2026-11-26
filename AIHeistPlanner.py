@@ -272,35 +272,20 @@ class HeistPlanner:
         self.exit_position = self.grid_layout.exit_position
 
     # Display BFS path on the grid
-    def show_path(self, path, original_grid):
-
-        # Make a copy of the original board
+    def show_path(self, path, original_grid, algorithm):
         grid = [row[:] for row in original_grid]
-
         if path:
-
             for row, column, has_treasure in path[1:-1]:
-
                 if (row, column) not in [
                     self.treasure_position,
-                    self.exit_position
-                ]:
-
+                    self.exit_position]:
                     grid[row][column] = "*"
-
-        print("\nMuseum with BFS Path (*):")
-
+        print(f"\nMuseum with {algorithm} Path (*):")
         self.grid_layout.heist_grid(grid)
 
     # Run A* and BFS
     def run_solutions(self):
-
         grid = self.grid_layout.create_game_board()
-
-        print(
-            f"\nSelected layout: {self.grid_layout.layout_id} "
-            f"({self.grid_layout.rows}x{self.grid_layout.columns})"
-        )
         print("\nOriginal Heist Grid:")
 
         self.grid_layout.heist_grid(grid)
@@ -319,74 +304,46 @@ class HeistPlanner:
             grid=grid
         )
 
-        # Measure A* execution time
+        # Measure execution time for A*
         start_time = time.perf_counter()
-
         a_star_path, a_star_explored = a_star.A_star()
-
         execution_time_a_star = time.perf_counter() - start_time
 
-        # Measure BFS execution time
+        # Measure execution time for BFS
         start_time = time.perf_counter()
-
         bfs_path, bfs_explored = bfs.BFS()
-
         execution_time_bfs = time.perf_counter() - start_time
 
-        # Display A* results
+        # Display the results for A*
         print("\nA* Results:")
-
         if a_star_path:
-
-            print(
-                "Path:",
-                [(row, column) for row, column, _ in a_star_path]
-            )
-
-            print("Path length:", len(a_star_path) - 1)
-            print("Nodes explored:", a_star_explored)
-
-            print(
-                f"Execution time: {execution_time_a_star:.6f} seconds"
-            )
-
+            print("Path: ", [(row, column) for row, column, _ in a_star_path])
+            print("Path length: ", len(a_star_path) - 1)
+            print("Nodes explored: ", a_star_explored)
+            print(f"Execution time: {execution_time_a_star:.6f} seconds")
+            
+            # Display A* path on grid
+            self.show_path(a_star_path, grid, "A*")
         else:
-
             print("No path found.")
-            print("Nodes explored:", a_star_explored)
+            print("Nodes explored: ", a_star_explored)
+            print(f"Execution time: {execution_time_a_star:.6f} seconds")
 
-            print(
-                f"Execution time: {execution_time_a_star:.6f} seconds"
-            )
-
-        # Display BFS results
+        # Display the results for BFS 
         print("\nBFS Results:")
 
         if bfs_path:
-
-            print(
-                "Path:",
-                [(row, column) for row, column, _ in bfs_path]
-            )
-
-            print("Path length:", len(bfs_path) - 1)
-            print("Nodes explored:", bfs_explored)
-
-            print(
-                f"Execution time: {execution_time_bfs:.6f} seconds"
-            )
-
-            # Display BFS path
-            self.show_path(bfs_path, grid)
-
+            print("Path: ", [(row, column) for row, column, _ in bfs_path])
+            print("Path length: ", len(bfs_path) - 1)
+            print("Nodes explored: ", bfs_explored)
+            print(f"Execution time: {execution_time_bfs:.6f} seconds")
+            
+            # Show the BFS path on the grid
+            self.show_path(bfs_path, grid, "BFS")
         else:
-
             print("No path found.")
-            print("Nodes explored:", bfs_explored)
-
-            print(
-                f"Execution time: {execution_time_bfs:.6f} seconds"
-            )
+            print("Nodes explored: ", bfs_explored)
+            print(f"Execution time: {execution_time_bfs:.6f} seconds")
 
         return bfs_path
     
